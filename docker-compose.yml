@@ -2,7 +2,6 @@ services:
   text-generation-webui:
     build:
       context: .
-      dockerfile: docker/nvidia/Dockerfile
       args:
         # Requirements file to use:
         # | GPU | requirements file to use |
