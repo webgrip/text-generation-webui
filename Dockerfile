@@ -11,7 +11,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,rw \
     apt install --no-install-recommends -y git vim build-essential python3-dev pip bash curl && \
     rm -rf /var/lib/apt/lists/*
 WORKDIR /home/app/
-RUN git clone https://github.com/webgrip/text-generation-webui.git && git checkout -b feature/webgrip && git pull origin feature/webgrip
+RUN git clone https://github.com/webgrip/text-generation-webui.git && cd text-generation-webui && git checkout -b feature/webgrip && git pull origin feature/webgrip
 WORKDIR /home/app/text-generation-webui
 RUN GPU_CHOICE=A USE_CUDA118=FALSE LAUNCH_AFTER_INSTALL=FALSE INSTALL_EXTENSIONS=TRUE ./start_linux.sh --verbose
 COPY CMD_FLAGS.txt /home/app/text-generation-webui/
