@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import torch
-from peft import PeftModel
 from transformers import is_torch_xpu_available
 
 import modules.shared as shared
@@ -72,8 +71,6 @@ def add_lora_autogptq(lora_names):
     else:
         if len(lora_names) > 1:
             logger.warning('AutoGPTQ can only work with 1 LoRA at the moment. Only the first one in the list will be loaded.')
-        if not shared.args.no_inject_fused_attention:
-            logger.warning('Fused Atttention + AutoGPTQ may break Lora loading. Disable it.')
 
         peft_config = GPTQLoraConfig(
             inference_mode=True,
@@ -87,6 +84,9 @@ def add_lora_autogptq(lora_names):
 
 
 def add_lora_transformers(lora_names):
+
+    from peft import PeftModel
+
     prior_set = set(shared.lora_names)
     added_set = set(lora_names) - prior_set
     removed_set = prior_set - set(lora_names)

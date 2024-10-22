@@ -16,9 +16,9 @@ import sys
 
 
 # Define the required PyTorch version
-TORCH_VERSION = "2.2.1"
-TORCHVISION_VERSION = "0.17.1"
-TORCHAUDIO_VERSION = "2.2.1"
+TORCH_VERSION = "2.4.1"
+TORCHVISION_VERSION = "0.19.1"
+TORCHAUDIO_VERSION = "2.4.1"
 
 # Environment
 script_dir = os.getcwd()
@@ -117,7 +117,7 @@ def update_pytorch():
     elif is_cuda:
         install_pytorch += "--index-url https://download.pytorch.org/whl/cu121"
     elif is_rocm:
-        install_pytorch += "--index-url https://download.pytorch.org/whl/rocm5.6"
+        install_pytorch += "--index-url https://download.pytorch.org/whl/rocm6.1"
     elif is_cpu:
         install_pytorch += "--index-url https://download.pytorch.org/whl/cpu"
     elif is_intel:
@@ -189,8 +189,11 @@ def run_cmd(cmd, assert_success=False, environment=False, capture_output=False, 
             conda_sh_path = os.path.join(script_dir, "installer_files", "conda", "etc", "profile.d", "conda.sh")
             cmd = f'. "{conda_sh_path}" && conda activate "{conda_env_path}" && {cmd}'
 
+    # Set executable to None for Windows, /bin/bash for everything else
+    executable = None if is_windows() else '/bin/bash'
+
     # Run shell commands
-    result = subprocess.run(cmd, shell=True, capture_output=capture_output, env=env)
+    result = subprocess.run(cmd, shell=True, capture_output=capture_output, env=env, executable=executable)
 
     # Assert the command ran successfully
     if assert_success and result.returncode != 0:
@@ -239,7 +242,7 @@ def install_webui():
             "What is your GPU?",
             {
                 'A': 'NVIDIA',
-                'B': 'AMD (Linux/MacOS only. Requires ROCm SDK 5.6 on Linux)',
+                'B': 'AMD (Linux/MacOS only. Requires ROCm SDK 6.1 on Linux)',
                 'C': 'Apple M Series',
                 'D': 'Intel Arc (IPEX)',
                 'N': 'None (I want to run models in CPU mode)'
@@ -294,7 +297,7 @@ def install_webui():
         else:
             install_pytorch += "--index-url https://download.pytorch.org/whl/cu121"
     elif selected_gpu == "AMD":
-        install_pytorch += "--index-url https://download.pytorch.org/whl/rocm5.6"
+        install_pytorch += "--index-url https://download.pytorch.org/whl/rocm6.1"
     elif selected_gpu in ["APPLE", "NONE"]:
         install_pytorch += "--index-url https://download.pytorch.org/whl/cpu"
     elif selected_gpu == "INTEL":
@@ -315,7 +318,7 @@ def install_webui():
         run_cmd("conda install -y libuv")
 
     # Install the webui requirements
-    update_requirements(initial_installation=True)
+    update_requirements(initial_installation=True, pull=False)
 
 
 def get_extensions_names():
@@ -388,7 +391,12 @@ def update_requirements(initial_installation=False, pull=True):
     # Prepare the requirements file
     textgen_requirements = open(requirements_file).read().splitlines()
     if is_cuda118:
-        textgen_requirements = [req.replace('+cu121', '+cu118').replace('+cu122', '+cu118') for req in textgen_requirements]
+        textgen_requirements = [
+            req.replace('+cu121', '+cu118').replace('+cu122', '+cu118')
+            for req in textgen_requirements
+            if "auto-gptq" not in req.lower() and "autoawq" not in req.lower()
+        ]
+
     if is_windows() and is_cuda118:  # No flash-attention on Windows for CUDA 11
         textgen_requirements = [req for req in textgen_requirements if 'oobabooga/flash-attention' not in req]
 
